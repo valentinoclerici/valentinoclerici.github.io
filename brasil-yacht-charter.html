@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nautica Brasil — Yacht Charter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#07152a;
+  --navy2:#0e2340;
+  --ocean:#1a4a7a;
+  --gold:#c9882a;
+  --gold2:#e8a83c;
+  --cream:#f4ede0;
+  --cream2:#fdf8f0;
+  --teal:#1b7c5a;
+  --white:#ffffff;
+  --text-light:#c8bfb0;
+  --radius:4px;
+  --radius-lg:12px;
+  font-size:16px;
+}
+html{scroll-behavior:smooth}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--cream2);
+  color:var(--navy);
+  overflow-x:hidden;
+}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--navy)}
+::-webkit-scrollbar-thumb{background:var(--gold);border-radius:3px}
+
+/* ===== NAV ===== */
+nav{
+  position:fixed;top:0;left:0;width:100%;z-index:100;
+  padding:1.2rem 5%;
+  display:flex;align-items:center;justify-content:space-between;
+  transition:background .4s,padding .4s,box-shadow .4s;
+}
+nav.scrolled{
+  background:rgba(7,21,42,0.97);
+  backdrop-filter:blur(12px);
+  padding:.9rem 5%;
+  box-shadow:0 2px 30px rgba(0,0,0,.3);
+}
+.nav-logo{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.6rem;font-weight:600;
+  color:var(--white);letter-spacing:.04em;
+  text-decoration:none;
+}
+.nav-logo span{color:var(--gold)}
+.nav-links{display:flex;gap:2.5rem;list-style:none}
+.nav-links a{
+  color:rgba(255,255,255,.8);
+  text-decoration:none;font-size:.85rem;
+  letter-spacing:.08em;text-transform:uppercase;
+  font-weight:400;transition:color .2s;
+}
+.nav-links a:hover{color:var(--gold)}
+.nav-cta{
+  background:var(--gold);color:var(--navy);
+  border:none;padding:.55rem 1.4rem;
+  border-radius:var(--radius);font-size:.82rem;
+  font-weight:500;letter-spacing:.06em;text-transform:uppercase;
+  cursor:pointer;transition:background .2s;font-family:'DM Sans',sans-serif;
+  text-decoration:none;
+}
+.nav-cta:hover{background:var(--gold2)}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px}
+.hamburger span{width:24px;height:2px;background:white;border-radius:2px;transition:.3s}
+.mobile-menu{
+  display:none;position:fixed;top:0;left:0;
+  width:100%;height:100vh;
+  background:var(--navy);z-index:99;
+  flex-direction:column;align-items:center;justify-content:center;gap:2.5rem;
+}
+.mobile-menu.open{display:flex}
+.mobile-menu a{
+  font-family:'Cormorant Garamond',serif;
+  font-size:2.2rem;color:var(--white);text-decoration:none;
+  font-style:italic;transition:color .2s;
+}
+.mobile-menu a:hover{color:var(--gold)}
+.mobile-close{
+  position:absolute;top:1.5rem;right:5%;
+  background:none;border:none;color:white;font-size:1.8rem;cursor:pointer;
+}
+
+/* ===== HERO ===== */
+#hero{
+  position:relative;height:100vh;min-height:680px;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+.hero-bg{
+  position:absolute;inset:0;
+  background:linear-gradient(160deg,#07152a 0%,#0e2a4a 40%,#1a4a7a 70%,#0e6060 100%);
+}
+.hero-waves{
+  position:absolute;bottom:0;left:0;width:100%;
+  height:200px;overflow:hidden;
+}
+.hero-waves svg{position:absolute;bottom:0;width:100%}
+.hero-particles{
+  position:absolute;inset:0;overflow:hidden;pointer-events:none;
+}
+.particle{
+  position:absolute;border-radius:50%;
+  background:rgba(201,136,42,.15);
+  animation:float linear infinite;
+}
+@keyframes float{
+  0%{transform:translateY(100vh) scale(0);opacity:0}
+  10%{opacity:1}
+  90%{opacity:.6}
+  100%{transform:translateY(-20vh) scale(1.2);opacity:0}
+}
+.hero-content{
+  position:relative;z-index:2;text-align:center;
+  padding:0 1.5rem;max-width:900px;
+}
+.hero-badge{
+  display:inline-block;
+  border:1px solid rgba(201,136,42,.5);
+  color:var(--gold);font-size:.75rem;
+  letter-spacing:.15em;text-transform:uppercase;
+  padding:.4rem 1.2rem;border-radius:50px;
+  margin-bottom:1.8rem;
+  animation:fadeUp .8s ease both;
+}
+.hero-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(3rem,8vw,6.5rem);
+  font-weight:300;color:var(--white);
+  line-height:1.05;margin-bottom:1.5rem;
+  animation:fadeUp .8s .15s ease both;
+}
+.hero-title em{
+  font-style:italic;color:var(--gold);display:block;
+}
+.hero-sub{
+  font-size:1rem;color:rgba(255,255,255,.65);
+  max-width:540px;margin:0 auto 2.8rem;line-height:1.8;
+  font-weight:300;
+  animation:fadeUp .8s .3s ease both;
+}
+.hero-btns{
+  display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;
+  animation:fadeUp .8s .45s ease both;
+}
+.btn-primary{
+  background:var(--gold);color:var(--navy);
+  padding:.85rem 2.2rem;border-radius:var(--radius);
+  font-size:.9rem;font-weight:500;
+  letter-spacing:.05em;text-decoration:none;
+  border:none;cursor:pointer;font-family:'DM Sans',sans-serif;
+  transition:background .2s,transform .2s;
+}
+.btn-primary:hover{background:var(--gold2);transform:translateY(-2px)}
+.btn-outline{
+  background:transparent;
+  border:1px solid rgba(255,255,255,.35);
+  color:var(--white);padding:.85rem 2.2rem;
+  border-radius:var(--radius);font-size:.9rem;font-weight:400;
+  letter-spacing:.05em;text-decoration:none;cursor:pointer;
+  font-family:'DM Sans',sans-serif;transition:border-color .2s,transform .2s;
+}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold);transform:translateY(-2px)}
+.hero-scroll{
+  position:absolute;bottom:2.5rem;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:.5rem;
+  color:rgba(255,255,255,.4);font-size:.7rem;letter-spacing:.1em;
+  text-transform:uppercase;animation:fadeUp .8s .6s ease both;
+}
+.scroll-line{
+  width:1px;height:40px;background:linear-gradient(to bottom,rgba(255,255,255,0),rgba(201,136,42,.7));
+  animation:scrollPulse 2s ease-in-out infinite;
+}
+@keyframes scrollPulse{0%,100%{opacity:.4;transform:scaleY(1)}50%{opacity:1;transform:scaleY(1.2)}}
+.hero-stats{
+  position:absolute;bottom:5rem;right:5%;
+  display:flex;flex-direction:column;gap:1.5rem;
+  animation:fadeLeft .8s .7s ease both;
+}
+.hero-stat{text-align:right}
+.hero-stat-num{
+  font-family:'Cormorant Garamond',serif;
+  font-size:2rem;font-weight:300;color:var(--white);display:block;
+}
+.hero-stat-lbl{
+  font-size:.7rem;color:rgba(255,255,255,.4);
+  letter-spacing:.1em;text-transform:uppercase;
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeLeft{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+.reveal{opacity:0;transform:translateY(40px);transition:opacity .7s ease,transform .7s ease}
+.reveal.visible{opacity:1;transform:none}
+
+/* ===== SECTION COMMON ===== */
+section{padding:7rem 5%}
+.section-label{
+  font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--gold);font-weight:500;margin-bottom:.9rem;
+  display:flex;align-items:center;gap:.7rem;
+}
+.section-label::before{
+  content:'';display:inline-block;width:32px;height:1px;background:var(--gold);
+}
+.section-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(2.2rem,5vw,3.8rem);
+  font-weight:300;line-height:1.15;color:var(--navy);
+}
+.section-title em{font-style:italic;color:var(--ocean)}
+.section-sub{
+  font-size:.95rem;color:#5a6a7a;line-height:1.8;
+  max-width:520px;font-weight:300;
+}
+
+/* ===== ABOUT ===== */
+#about{background:var(--navy);overflow:hidden}
+.about-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:6rem;align-items:center;
+}
+.about-visual{position:relative}
+.about-img-frame{
+  position:relative;aspect-ratio:3/4;max-height:580px;
+  border-radius:var(--radius-lg);overflow:hidden;
+}
+.about-img-bg{
+  position:absolute;inset:0;
+  background:linear-gradient(135deg,#1a4a7a,#0e6060,#1b7c5a);
+}
+.about-img-overlay{
+  position:absolute;inset:0;
+  background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+.about-img-text{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  justify-content:flex-end;padding:2rem;
+}
+.about-img-quote{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.6rem;font-style:italic;color:white;
+  font-weight:300;line-height:1.4;
+}
+.about-img-attr{font-size:.75rem;color:rgba(255,255,255,.5);margin-top:.5rem;letter-spacing:.1em}
+.about-badge{
+  position:absolute;top:-1.5rem;right:-1.5rem;
+  width:110px;height:110px;border-radius:50%;
+  background:var(--gold);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  font-family:'Cormorant Garamond',serif;
+}
+.about-badge-num{font-size:2rem;font-weight:600;color:var(--navy);line-height:1}
+.about-badge-txt{font-size:.55rem;color:var(--navy);letter-spacing:.08em;text-align:center;text-transform:uppercase}
+.about-content .section-title{color:var(--white)}
+.about-content .section-sub{color:var(--text-light)}
+.about-features{margin-top:2.5rem;display:flex;flex-direction:column;gap:1.5rem}
+.about-feat{
+  display:flex;gap:1.2rem;align-items:flex-start;
+  padding:1.2rem;border-radius:var(--radius);
+  border:1px solid rgba(255,255,255,.07);
+  background:rgba(255,255,255,.03);
+  transition:border-color .3s,background .3s;
+}
+.about-feat:hover{border-color:rgba(201,136,42,.3);background:rgba(201,136,42,.05)}
+.feat-icon{
+  width:40px;height:40px;border-radius:var(--radius);
+  background:rgba(201,136,42,.15);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;flex-shrink:0;color:var(--gold);
+}
+.feat-title{font-size:.9rem;font-weight:500;color:var(--white);margin-bottom:.2rem}
+.feat-desc{font-size:.82rem;color:var(--text-light);line-height:1.6}
+.about-stats-row{
+  display:flex;gap:2.5rem;margin-top:2.5rem;
+  padding-top:2rem;border-top:1px solid rgba(255,255,255,.1);
+}
+.about-stat-num{
+  font-family:'Cormorant Garamond',serif;
+  font-size:2.6rem;font-weight:300;color:var(--gold);display:block;
+}
+.about-stat-lbl{font-size:.75rem;color:var(--text-light);letter-spacing:.08em}
+
+/* ===== SEARCH BAR ===== */
+#yachts{background:var(--cream2)}
+.search-wrap{
+  background:var(--white);border-radius:var(--radius-lg);
+  box-shadow:0 4px 40px rgba(7,21,42,.1);
+  padding:1.5rem;margin-bottom:3.5rem;
+  display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:1rem;
+  align-items:end;
+}
+.search-field label{
+  display:block;font-size:.7rem;letter-spacing:.1em;
+  text-transform:uppercase;color:#8a9ab0;margin-bottom:.5rem;font-weight:500;
+}
+.search-field input,.search-field select{
+  width:100%;padding:.75rem 1rem;
+  border:1px solid #dde5ef;border-radius:var(--radius);
+  font-family:'DM Sans',sans-serif;font-size:.9rem;color:var(--navy);
+  background:var(--cream2);outline:none;transition:border-color .2s;
+  appearance:none;-webkit-appearance:none;
+}
+.search-field input:focus,.search-field select:focus{border-color:var(--ocean)}
+.search-field select{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath fill='%23526070' d='M0 0l6 8 6-8z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right .8rem center;padding-right:2rem;
+}
+.search-btn{
+  background:var(--navy);color:white;border:none;
+  padding:.75rem 1.8rem;border-radius:var(--radius);
+  font-family:'DM Sans',sans-serif;font-size:.88rem;
+  font-weight:500;cursor:pointer;white-space:nowrap;
+  transition:background .2s;letter-spacing:.04em;
+}
+.search-btn:hover{background:var(--ocean)}
+.filter-chips{display:flex;gap:.7rem;flex-wrap:wrap;margin-bottom:2rem}
+.chip{
+  padding:.4rem 1rem;border-radius:50px;font-size:.78rem;
+  border:1px solid #ccd5e0;color:#5a6a7a;
+  background:white;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;
+}
+.chip:hover,.chip.active{
+  background:var(--navy);color:white;border-color:var(--navy);
+}
+.yachts-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+  gap:2rem;
+}
+.yacht-card{
+  background:white;border-radius:var(--radius-lg);
+  overflow:hidden;box-shadow:0 2px 20px rgba(7,21,42,.07);
+  transition:transform .3s,box-shadow .3s;cursor:pointer;
+}
+.yacht-card:hover{transform:translateY(-6px);box-shadow:0 12px 40px rgba(7,21,42,.15)}
+.yacht-card.hidden{display:none}
+.yacht-img{
+  height:220px;position:relative;overflow:hidden;
+}
+.yacht-img-bg{
+  position:absolute;inset:0;transition:transform .4s;
+}
+.yacht-card:hover .yacht-img-bg{transform:scale(1.06)}
+.yacht-tag{
+  position:absolute;top:1rem;right:1rem;
+  background:rgba(7,21,42,.75);backdrop-filter:blur(8px);
+  color:white;font-size:.7rem;padding:.3rem .75rem;
+  border-radius:50px;letter-spacing:.06em;font-weight:500;
+}
+.yacht-fav{
+  position:absolute;top:1rem;left:1rem;
+  width:34px;height:34px;border-radius:50%;
+  background:rgba(255,255,255,.9);border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.9rem;transition:transform .2s;
+}
+.yacht-fav:hover{transform:scale(1.15)}
+.yacht-body{padding:1.4rem}
+.yacht-name{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.35rem;font-weight:600;color:var(--navy);margin-bottom:.25rem;
+}
+.yacht-loc{font-size:.78rem;color:#8a9ab0;margin-bottom:.9rem;display:flex;align-items:center;gap:.35rem}
+.yacht-loc::before{content:'📍';font-size:.7rem}
+.yacht-specs{
+  display:flex;gap:1.2rem;padding:.9rem 0;
+  border-top:1px solid #eef1f6;border-bottom:1px solid #eef1f6;
+  margin-bottom:.9rem;
+}
+.spec{display:flex;flex-direction:column;align-items:center;gap:.2rem;flex:1}
+.spec-val{font-size:.85rem;font-weight:500;color:var(--navy)}
+.spec-lbl{font-size:.65rem;color:#aab0bd;text-transform:uppercase;letter-spacing:.07em}
+.yacht-footer{display:flex;align-items:center;justify-content:space-between}
+.yacht-price{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.5rem;font-weight:600;color:var(--ocean);
+}
+.yacht-price span{font-size:.75rem;font-weight:400;color:#8a9ab0;font-family:'DM Sans',sans-serif}
+.yacht-btn{
+  background:var(--navy);color:white;border:none;
+  padding:.5rem 1.1rem;border-radius:var(--radius);
+  font-size:.78rem;font-weight:500;cursor:pointer;
+  font-family:'DM Sans',sans-serif;transition:background .2s;
+  letter-spacing:.04em;
+}
+.yacht-btn:hover{background:var(--ocean)}
+.no-results{
+  text-align:center;padding:3rem;color:#8a9ab0;
+  grid-column:1/-1;display:none;
+}
+.no-results.show{display:block}
+
+/* ===== MAP ===== */
+#map-section{
+  background:var(--navy2);padding:7rem 0;
+}
+.map-inner{max-width:90%;margin:0 auto}
+.map-header{padding:0 5%;margin-bottom:2.5rem}
+.map-header .section-title{color:var(--white)}
+.map-header .section-sub{color:var(--text-light)}
+.map-layout{
+  display:grid;grid-template-columns:280px 1fr;gap:0;
+  background:var(--navy);border-radius:var(--radius-lg);
+  overflow:hidden;box-shadow:0 8px 60px rgba(0,0,0,.4);
+}
+.map-sidebar{padding:2rem;overflow-y:auto;max-height:480px}
+.map-sidebar h3{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.15rem;color:var(--white);margin-bottom:1.2rem;
+  padding-bottom:.7rem;border-bottom:1px solid rgba(255,255,255,.1);
+}
+.map-location{
+  padding:.9rem .75rem;border-radius:var(--radius);
+  cursor:pointer;transition:background .2s;margin-bottom:.3rem;
+  border:1px solid transparent;
+}
+.map-location:hover,.map-location.active{
+  background:rgba(201,136,42,.1);border-color:rgba(201,136,42,.3);
+}
+.map-loc-name{font-size:.88rem;font-weight:500;color:var(--white);margin-bottom:.2rem}
+.map-loc-desc{font-size:.75rem;color:var(--text-light);line-height:1.5}
+.map-loc-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--gold);display:inline-block;margin-right:.5rem;
+}
+#leaflet-map{height:480px;flex:1}
+.leaflet-popup-content-wrapper{
+  background:var(--navy)!important;border:1px solid rgba(201,136,42,.3)!important;
+  border-radius:var(--radius)!important;box-shadow:0 4px 20px rgba(0,0,0,.4)!important;
+}
+.leaflet-popup-content{color:white!important;font-family:'DM Sans',sans-serif!important}
+.leaflet-popup-tip{background:var(--navy)!important}
+.leaflet-popup-close-button{color:var(--gold)!important}
+
+/* ===== CONTACT ===== */
+#contact{background:var(--cream2)}
+.contact-grid{
+  display:grid;grid-template-columns:1fr 1.3fr;gap:6rem;align-items:start;
+}
+.contact-info .section-sub{margin-bottom:2.5rem}
+.contact-detail{
+  display:flex;gap:1rem;align-items:flex-start;margin-bottom:1.5rem;
+}
+.contact-icon{
+  width:42px;height:42px;border-radius:var(--radius);
+  background:var(--navy);display:flex;align-items:center;
+  justify-content:center;font-size:1rem;color:var(--gold);flex-shrink:0;
+}
+.contact-dt{font-size:.8rem;color:#8a9ab0;margin-bottom:.2rem;letter-spacing:.06em;text-transform:uppercase}
+.contact-dv{font-size:.92rem;color:var(--navy);font-weight:500}
+.contact-socials{display:flex;gap:.8rem;margin-top:2rem}
+.social-btn{
+  width:40px;height:40px;border-radius:var(--radius);
+  border:1px solid #ccd5e0;background:white;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .2s;text-decoration:none;font-size:.9rem;
+}
+.social-btn:hover{background:var(--navy);border-color:var(--navy);color:white}
+.contact-form{
+  background:white;border-radius:var(--radius-lg);
+  padding:2.5rem;box-shadow:0 4px 40px rgba(7,21,42,.09);
+}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.form-group{margin-bottom:1.2rem}
+.form-group label{
+  display:block;font-size:.72rem;letter-spacing:.1em;
+  text-transform:uppercase;color:#8a9ab0;margin-bottom:.45rem;font-weight:500;
+}
+.form-group input,.form-group select,.form-group textarea{
+  width:100%;padding:.8rem 1rem;
+  border:1px solid #dde5ef;border-radius:var(--radius);
+  font-family:'DM Sans',sans-serif;font-size:.9rem;color:var(--navy);
+  background:var(--cream2);outline:none;transition:border-color .2s;
+  appearance:none;
+}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{
+  border-color:var(--ocean);background:white;
+}
+.form-group textarea{resize:vertical;min-height:110px;line-height:1.6}
+.form-group select{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath fill='%23526070' d='M0 0l6 8 6-8z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right .8rem center;padding-right:2rem;
+}
+.form-submit{
+  width:100%;background:var(--navy);color:white;
+  border:none;padding:1rem;border-radius:var(--radius);
+  font-family:'DM Sans',sans-serif;font-size:.92rem;font-weight:500;
+  cursor:pointer;transition:background .2s;letter-spacing:.06em;
+  margin-top:.5rem;
+}
+.form-submit:hover{background:var(--ocean)}
+.form-success{
+  display:none;text-align:center;padding:2rem;
+  color:var(--teal);font-family:'Cormorant Garamond',serif;
+  font-size:1.4rem;font-style:italic;
+}
+
+/* ===== FOOTER ===== */
+footer{
+  background:var(--navy);padding:4rem 5% 2.5rem;
+}
+.footer-grid{
+  display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:3rem;
+  margin-bottom:3rem;
+}
+.footer-brand .nav-logo{display:block;margin-bottom:1rem}
+.footer-desc{font-size:.83rem;color:var(--text-light);line-height:1.8;max-width:240px}
+.footer-col h4{
+  font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:1.2rem;font-weight:500;
+}
+.footer-col ul{list-style:none}
+.footer-col li{margin-bottom:.65rem}
+.footer-col a{
+  font-size:.83rem;color:var(--text-light);text-decoration:none;
+  transition:color .2s;
+}
+.footer-col a:hover{color:var(--white)}
+.footer-bottom{
+  border-top:1px solid rgba(255,255,255,.08);
+  padding-top:2rem;display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:1rem;
+}
+.footer-copy{font-size:.78rem;color:rgba(255,255,255,.3)}
+.footer-links{display:flex;gap:1.5rem}
+.footer-links a{font-size:.78rem;color:rgba(255,255,255,.3);text-decoration:none}
+.footer-links a:hover{color:var(--gold)}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:1024px){
+  .about-grid{grid-template-columns:1fr;gap:3rem}
+  .about-visual{max-width:400px;margin:0 auto}
+  .footer-grid{grid-template-columns:1fr 1fr;gap:2rem}
+  .contact-grid{grid-template-columns:1fr;gap:3rem}
+  .map-layout{grid-template-columns:1fr}
+  .map-sidebar{max-height:200px;display:flex;gap:.5rem;overflow-x:auto;flex-wrap:nowrap}
+  .map-sidebar h3{display:none}
+  #leaflet-map{height:400px}
+}
+@media(max-width:768px){
+  nav{padding:1rem 5%}
+  .nav-links,.nav-cta{display:none}
+  .hamburger{display:flex}
+  .hero-stats{display:none}
+  section{padding:5rem 5%}
+  .search-wrap{grid-template-columns:1fr 1fr;grid-template-rows:auto auto auto}
+  .search-field:last-of-type,.search-btn{grid-column:1/-1}
+  .form-row{grid-template-columns:1fr}
+  .footer-grid{grid-template-columns:1fr 1fr}
+  .about-badge{width:80px;height:80px;top:-1rem;right:-1rem}
+  .about-badge-num{font-size:1.4rem}
+}
+@media(max-width:480px){
+  .search-wrap{grid-template-columns:1fr}
+  .footer-grid{grid-template-columns:1fr}
+  .hero-title{font-size:2.8rem}
+}
+
+/* ===== YACHT IMG COLORS (gradients as placeholders) ===== */
+.yd1{background:linear-gradient(135deg,#0e3a6a,#1a7070,#0e4a50)}
+.yd2{background:linear-gradient(135deg,#1a3a5c,#2a5a8a,#1a4a6a)}
+.yd3{background:linear-gradient(135deg,#0a2a4a,#1a6a5a,#0a4a40)}
+.yd4{background:linear-gradient(135deg,#2a1a3a,#3a3a7a,#1a2a6a)}
+.yd5{background:linear-gradient(135deg,#3a2a0a,#7a5a1a,#5a4a0a)}
+.yd6{background:linear-gradient(135deg,#1a3a2a,#2a6a4a,#1a4a3a)}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="navbar">
+  <a class="nav-logo" href="#hero">Nautica <span>Brasil</span></a>
+  <ul class="nav-links">
+    <li><a href="#about">Sobre</a></li>
+    <li><a href="#yachts">Iates</a></li>
+    <li><a href="#map-section">Destinos</a></li>
+    <li><a href="#contact">Contato</a></li>
+  </ul>
+  <a class="nav-cta" href="#contact">Reservar Agora</a>
+  <div class="hamburger" id="hamburger" role="button" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<!-- MOBILE MENU -->
+<div class="mobile-menu" id="mobile-menu">
+  <button class="mobile-close" id="mobile-close">✕</button>
+  <a href="#about" class="mm-link">Sobre</a>
+  <a href="#yachts" class="mm-link">Iates</a>
+  <a href="#map-section" class="mm-link">Destinos</a>
+  <a href="#contact" class="mm-link">Contato</a>
+</div>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-particles" id="particles"></div>
+  <div class="hero-content">
+    <div class="hero-badge">✦ Fretamento de Luxo no Brasil</div>
+    <h1 class="hero-title">
+      Navegue pelas<br>
+      <em>Águas do Brasil</em>
+    </h1>
+    <p class="hero-sub">Da exuberância de Angra dos Reis à magia de Fernando de Noronha — experimente o Brasil como poucos viveram, a bordo dos melhores iates.</p>
+    <div class="hero-btns">
+      <a class="btn-primary" href="#yachts">Explorar Frota</a>
+      <a class="btn-outline" href="#contact">Consultar</a>
+    </div>
+  </div>
+  <div class="hero-scroll">
+    <div class="scroll-line"></div>
+    <span>rolar</span>
+  </div>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <span class="hero-stat-num">48+</span>
+      <span class="hero-stat-lbl">Iates Disponíveis</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-num">12</span>
+      <span class="hero-stat-lbl">Destinos</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-num">15 anos</span>
+      <span class="hero-stat-lbl">de Experiência</span>
+    </div>
+  </div>
+  <div class="hero-waves">
+    <svg viewBox="0 0 1440 100" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0,60 C360,0 720,100 1080,40 C1260,10 1380,50 1440,60 L1440,100 L0,100Z" fill="#07152a"/>
+    </svg>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="about-grid">
+    <div class="about-visual reveal">
+      <div class="about-img-frame">
+        <div class="about-img-bg"></div>
+        <div class="about-img-overlay"></div>
+        <div class="about-img-text">
+          <p class="about-img-quote">"O oceano é a primeira e mais antiga civilização do Brasil."</p>
+          <p class="about-img-attr">— Amyr Klink, navegador brasileiro</p>
+        </div>
+      </div>
+      <div class="about-badge">
+        <span class="about-badge-num">15</span>
+        <span class="about-badge-txt">Anos no<br>Mercado</span>
+      </div>
+    </div>
+    <div class="about-content reveal" style="transition-delay:.15s">
+      <div class="section-label">Nossa História</div>
+      <h2 class="section-title">A arte de navegar com <em>elegância</em></h2>
+      <p class="section-sub" style="margin-top:1rem;color:var(--text-light)">Fundada em 2009 no coração do Rio de Janeiro, a Nautica Brasil nasceu da paixão pelo mar e pelo desejo de oferecer experiências náuticas verdadeiramente excepcionais ao longo de toda a costa brasileira.</p>
+      <div class="about-features">
+        <div class="about-feat">
+          <div class="feat-icon">⚓</div>
+          <div>
+            <div class="feat-title">Frota Certificada</div>
+            <div class="feat-desc">Todos os nossos iates passam por inspeção rigorosa e possuem certificação ANVISA e Marinha do Brasil.</div>
+          </div>
+        </div>
+        <div class="about-feat">
+          <div class="feat-icon">👨‍✈️</div>
+          <div>
+            <div class="feat-title">Tripulação Profissional</div>
+            <div class="feat-desc">Capitães experientes, comissários treinados e guias locais para uma experiência completa e segura.</div>
+          </div>
+        </div>
+        <div class="about-feat">
+          <div class="feat-icon">🌊</div>
+          <div>
+            <div class="feat-title">Roteiros Exclusivos</div>
+            <div class="feat-desc">Criamos itinerários personalizados — de Búzios a Noronha — adaptados ao seu estilo e ritmo.</div>
+          </div>
+        </div>
+      </div>
+      <div class="about-stats-row">
+        <div>
+          <span class="about-stat-num">1.200+</span>
+          <span class="about-stat-lbl">Clientes Satisfeitos</span>
+        </div>
+        <div>
+          <span class="about-stat-num">48</span>
+          <span class="about-stat-lbl">Iates na Frota</span>
+        </div>
+        <div>
+          <span class="about-stat-num">12</span>
+          <span class="about-stat-lbl">Destinos</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- YACHTS -->
+<section id="yachts">
+  <div class="reveal">
+    <div class="section-label">Nossa Frota</div>
+    <h2 class="section-title">Iates <em>Disponíveis</em></h2>
+    <p class="section-sub" style="margin-top:.8rem">Escolha entre veleiros clássicos, motoryachts modernos e catamarãs espaçosos para sua aventura perfeita.</p>
+  </div>
+
+  <div class="search-wrap reveal" style="margin-top:2.5rem;transition-delay:.1s">
+    <div class="search-field">
+      <label>Destino</label>
+      <select id="s-dest">
+        <option value="">Todos os destinos</option>
+        <option>Angra dos Reis</option>
+        <option>Búzios</option>
+        <option>Ilhabela</option>
+        <option>Salvador</option>
+        <option>Noronha</option>
+        <option>Paraty</option>
+      </select>
+    </div>
+    <div class="search-field">
+      <label>Tipo</label>
+      <select id="s-type">
+        <option value="">Todos os tipos</option>
+        <option>Veleiro</option>
+        <option>Motoryacht</option>
+        <option>Catamarã</option>
+        <option>Lancha</option>
+      </select>
+    </div>
+    <div class="search-field">
+      <label>Hóspedes</label>
+      <input type="number" id="s-guests" placeholder="Número de pessoas" min="1" max="30">
+    </div>
+    <button class="search-btn" id="do-search">Buscar Iates</button>
+  </div>
+
+  <div class="filter-chips reveal" style="transition-delay:.15s">
+    <button class="chip active" data-f="all">Todos</button>
+    <button class="chip" data-f="Veleiro">Veleiro</button>
+    <button class="chip" data-f="Motoryacht">Motoryacht</button>
+    <button class="chip" data-f="Catamarã">Catamarã</button>
+    <button class="chip" data-f="Lancha">Lancha</button>
+  </div>
+
+  <div class="yachts-grid" id="yachts-grid">
+    <!-- Cards generated by JS -->
+  </div>
+  <div class="no-results" id="no-results">Nenhum iate encontrado com esses filtros.</div>
+</section>
+
+<!-- MAP -->
+<section id="map-section">
+  <div class="map-inner">
+    <div class="map-header reveal">
+      <div class="section-label">Destinos</div>
+      <h2 class="section-title">Explore o <em>Litoral Brasileiro</em></h2>
+      <p class="section-sub" style="margin-top:.7rem">Do Nordeste ao Sul, navegue pelos destinos mais deslumbrantes do Brasil.</p>
+    </div>
+    <div class="map-layout reveal" style="transition-delay:.1s">
+      <div class="map-sidebar" id="map-sidebar">
+        <h3>Destinos em Destaque</h3>
+      </div>
+      <div id="leaflet-map"></div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="contact-grid">
+    <div class="reveal">
+      <div class="section-label">Fale Conosco</div>
+      <h2 class="section-title">Planeje sua <em>viagem dos sonhos</em></h2>
+      <p class="section-sub" style="margin-top:1rem">Nossa equipe especializada está pronta para criar a experiência náutica perfeita para você. Entre em contato e receba uma proposta personalizada.</p>
+      <div style="margin-top:2.5rem">
+        <div class="contact-detail">
+          <div class="contact-icon">📍</div>
+          <div>
+            <div class="contact-dt">Endereço</div>
+            <div class="contact-dv">Marina da Glória, Rio de Janeiro — RJ</div>
+          </div>
+        </div>
+        <div class="contact-detail">
+          <div class="contact-icon">📞</div>
+          <div>
+            <div class="contact-dt">Telefone</div>
+            <div class="contact-dv">+55 (21) 9 9999-0000</div>
+          </div>
+        </div>
+        <div class="contact-detail">
+          <div class="contact-icon">✉️</div>
+          <div>
+            <div class="contact-dt">Email</div>
+            <div class="contact-dv">contato@nauticabrasil.com.br</div>
+          </div>
+        </div>
+        <div class="contact-detail">
+          <div class="contact-icon">⏰</div>
+          <div>
+            <div class="contact-dt">Horário</div>
+            <div class="contact-dv">Seg–Sex: 8h–18h | Sáb: 9h–14h</div>
+          </div>
+        </div>
+      </div>
+      <div class="contact-socials">
+        <a class="social-btn" href="#" title="Instagram">📸</a>
+        <a class="social-btn" href="#" title="WhatsApp">💬</a>
+        <a class="social-btn" href="#" title="Facebook">👥</a>
+        <a class="social-btn" href="#" title="YouTube">▶️</a>
+      </div>
+    </div>
+    <div class="contact-form reveal" style="transition-delay:.1s">
+      <form id="contact-form" novalidate>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nome</label>
+            <input type="text" placeholder="Seu nome completo" required>
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" placeholder="seu@email.com" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Telefone</label>
+            <input type="tel" placeholder="(00) 9 0000-0000">
+          </div>
+          <div class="form-group">
+            <label>Nº de Hóspedes</label>
+            <input type="number" placeholder="Ex: 6" min="1" max="30">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Destino de Interesse</label>
+          <select>
+            <option value="">Selecione o destino</option>
+            <option>Angra dos Reis / Ilha Grande</option>
+            <option>Búzios</option>
+            <option>Ilhabela</option>
+            <option>Salvador / Itaparica</option>
+            <option>Fernando de Noronha</option>
+            <option>Paraty</option>
+            <option>Costa Verde (RJ)</option>
+            <option>Florianópolis</option>
+            <option>Outro / Não sei ainda</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Período da Viagem</label>
+          <input type="text" placeholder="Ex: Janeiro 2025, duas semanas">
+        </div>
+        <div class="form-group">
+          <label>Mensagem</label>
+          <textarea placeholder="Conte-nos sobre a experiência que você sonha ter..."></textarea>
+        </div>
+        <button type="submit" class="form-submit">Enviar Consulta ✦</button>
+      </form>
+      <div class="form-success" id="form-success">
+        ✦ Mensagem enviada com sucesso!<br>
+        <small style="font-family:'DM Sans',sans-serif;font-size:.85rem;color:#5a7090;font-style:normal">Nossa equipe retornará em até 24 horas.</small>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <a class="nav-logo" href="#hero">Nautica <span>Brasil</span></a>
+      <p class="footer-desc">A principal empresa de fretamento de iates do Brasil, com 15 anos de excelência no turismo náutico de luxo.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Destinos</h4>
+      <ul>
+        <li><a href="#">Angra dos Reis</a></li>
+        <li><a href="#">Búzios</a></li>
+        <li><a href="#">Ilhabela</a></li>
+        <li><a href="#">Fernando de Noronha</a></li>
+        <li><a href="#">Salvador</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Serviços</h4>
+      <ul>
+        <li><a href="#">Fretamento por Dia</a></li>
+        <li><a href="#">Viagens Multi-dia</a></li>
+        <li><a href="#">Eventos Corporativos</a></li>
+        <li><a href="#">Casamentos no Mar</a></li>
+        <li><a href="#">Pesca Esportiva</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Empresa</h4>
+      <ul>
+        <li><a href="#">Sobre Nós</a></li>
+        <li><a href="#">Nossa Frota</a></li>
+        <li><a href="#">Blog</a></li>
+        <li><a href="#">Carreiras</a></li>
+        <li><a href="#">Parceiros</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span class="footer-copy">© 2025 Nautica Brasil. Todos os direitos reservados.</span>
+    <div class="footer-links">
+      <a href="#">Privacidade</a>
+      <a href="#">Termos</a>
+      <a href="#">Cookies</a>
+    </div>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* ===== DATA ===== */
+const yachts = [
+  {id:1,name:'Acqua Bella',loc:'Angra dos Reis',type:'Veleiro',len:'52 pés',guests:8,cabins:4,price:'R$ 4.200',priceDay:true,grad:'yd1',fav:false,tag:'Mais Buscado'},
+  {id:2,name:'Rio Azul',loc:'Búzios',type:'Motoryacht',len:'68 pés',guests:12,cabins:5,price:'R$ 8.900',priceDay:true,grad:'yd2',fav:false,tag:'Premium'},
+  {id:3,name:'Mar de Coco',loc:'Ilhabela',type:'Catamarã',len:'48 pés',guests:10,cabins:4,price:'R$ 5.800',priceDay:true,grad:'yd3',fav:false,tag:'Família'},
+  {id:4,name:'Tropicana',loc:'Salvador',type:'Motoryacht',len:'76 pés',guests:14,cabins:6,price:'R$ 12.500',priceDay:true,grad:'yd4',fav:false,tag:'Luxo'},
+  {id:5,name:'Ouro do Mar',loc:'Paraty',type:'Veleiro',len:'45 pés',guests:6,cabins:3,price:'R$ 3.100',priceDay:true,grad:'yd5',fav:false,tag:'Clássico'},
+  {id:6,name:'Noronha Dream',loc:'Noronha',type:'Catamarã',len:'55 pés',guests:10,cabins:4,price:'R$ 9.400',priceDay:true,grad:'yd6',fav:false,tag:'Exclusivo'},
+];
+
+const destinations = [
+  {name:'Angra dos Reis',desc:'1.400 ilhas e praias de água cristalina. A joia da Costa Verde.',lat:-23.01,lng:-44.32,color:'#c9882a'},
+  {name:'Búzios',desc:'O Saint-Tropez brasileiro, com 23 praias e vida noturna sofisticada.',lat:-22.74,lng:-41.88,color:'#1a7a5a'},
+  {name:'Ilhabela',desc:'A maior ilha oceânica brasileira, repleta de cachoeiras e trilhas.',lat:-23.77,lng:-45.35,color:'#2a5a9a'},
+  {name:'Salvador',desc:'Capital cultural do Brasil, com baía e ilhas paradisíacas.',lat:-12.97,lng:-38.50,color:'#c9882a'},
+  {name:'F. de Noronha',desc:'Patrimônio da UNESCO e paraíso do mergulho no Atlântico.',lat:-3.85,lng:-32.43,color:'#1a7a5a'},
+  {name:'Paraty',desc:'Cidade histórica tombada, cercada por florestas e enseadas secretas.',lat:-23.22,lng:-44.71,color:'#8a2a6a'},
+];
+
+/* ===== PARTICLES ===== */
+const pc = document.getElementById('particles');
+for(let i=0;i<18;i++){
+  const p=document.createElement('div');
+  p.className='particle';
+  const s=Math.random()*60+20;
+  p.style.cssText=`width:${s}px;height:${s}px;left:${Math.random()*100}%;animation-duration:${Math.random()*15+8}s;animation-delay:${Math.random()*-15}s;opacity:${Math.random()*.3+.05}`;
+  pc.appendChild(p);
+}
+
+/* ===== NAV SCROLL ===== */
+const navbar=document.getElementById('navbar');
+window.addEventListener('scroll',()=>{
+  navbar.classList.toggle('scrolled',window.scrollY>60);
+},{ passive:true});
+
+/* ===== MOBILE MENU ===== */
+document.getElementById('hamburger').onclick=()=>document.getElementById('mobile-menu').classList.add('open');
+document.getElementById('mobile-close').onclick=()=>document.getElementById('mobile-menu').classList.remove('open');
+document.querySelectorAll('.mm-link').forEach(a=>a.onclick=()=>document.getElementById('mobile-menu').classList.remove('open'));
+
+/* ===== REVEAL ON SCROLL ===== */
+const obs=new IntersectionObserver(entries=>entries.forEach(e=>{
+  if(e.isIntersecting)e.target.classList.add('visible');
+}),{threshold:.1,rootMargin:'0px 0px -50px 0px'});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+
+/* ===== RENDER YACHTS ===== */
+function renderYachts(list){
+  const grid=document.getElementById('yachts-grid');
+  grid.innerHTML='';
+  if(!list.length){document.getElementById('no-results').classList.add('show');return;}
+  document.getElementById('no-results').classList.remove('show');
+  list.forEach(y=>{
+    const card=document.createElement('div');
+    card.className='yacht-card reveal';
+    card.dataset.type=y.type;
+    card.innerHTML=`
+      <div class="yacht-img">
+        <div class="yacht-img-bg ${y.grad}"></div>
+        <span class="yacht-tag">${y.tag}</span>
+        <button class="yacht-fav" data-id="${y.id}" title="Favoritar">${y.fav?'❤️':'🤍'}</button>
+      </div>
+      <div class="yacht-body">
+        <div class="yacht-name">${y.name}</div>
+        <div class="yacht-loc">${y.loc}</div>
+        <div class="yacht-specs">
+          <div class="spec"><span class="spec-val">${y.len}</span><span class="spec-lbl">Comprimento</span></div>
+          <div class="spec"><span class="spec-val">${y.guests}</span><span class="spec-lbl">Hóspedes</span></div>
+          <div class="spec"><span class="spec-val">${y.cabins}</span><span class="spec-lbl">Cabines</span></div>
+          <div class="spec"><span class="spec-val">${y.type}</span><span class="spec-lbl">Tipo</span></div>
+        </div>
+        <div class="yacht-footer">
+          <div class="yacht-price">${y.price} <span>/dia</span></div>
+          <button class="yacht-btn" onclick="bookYacht('${y.name}')">Reservar</button>
+        </div>
+      </div>`;
+    grid.appendChild(card);
+    setTimeout(()=>obs.observe(card),10);
+  });
+  document.querySelectorAll('.yacht-fav').forEach(btn=>{
+    btn.onclick=function(){
+      const id=+this.dataset.id;
+      const y=yachts.find(y=>y.id===id);
+      y.fav=!y.fav;
+      this.textContent=y.fav?'❤️':'🤍';
+    };
+  });
+}
+renderYachts(yachts);
+
+function bookYacht(name){
+  document.getElementById('contact').scrollIntoView({behavior:'smooth'});
+  setTimeout(()=>{
+    const t=document.querySelector('#contact-form textarea');
+    if(t&&!t.value)t.value=`Olá! Tenho interesse em reservar o iate "${name}". Por favor, envie mais informações.`;
+  },600);
+}
+
+/* ===== FILTER CHIPS ===== */
+document.querySelectorAll('.chip').forEach(chip=>{
+  chip.onclick=function(){
+    document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+    this.classList.add('active');
+    const f=this.dataset.f;
+    const filtered=f==='all'?yachts:yachts.filter(y=>y.type===f);
+    renderYachts(filtered);
+  };
+});
+
+/* ===== SEARCH ===== */
+document.getElementById('do-search').onclick=function(){
+  const dest=document.getElementById('s-dest').value;
+  const type=document.getElementById('s-type').value;
+  const guests=+document.getElementById('s-guests').value||0;
+  const filtered=yachts.filter(y=>{
+    if(dest&&y.loc!==dest)return false;
+    if(type&&y.type!==type)return false;
+    if(guests&&y.guests<guests)return false;
+    return true;
+  });
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  renderYachts(filtered);
+};
+
+/* ===== MAP ===== */
+const map=L.map('leaflet-map',{zoomControl:true,scrollWheelZoom:false}).setView([-15.77,-47.93],4);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+  attribution:'© CartoDB',maxZoom:18
+}).addTo(map);
+
+const svgIcon=(color)=>L.divIcon({
+  html:`<svg width="32" height="42" viewBox="0 0 32 42" xmlns="http://www.w3.org/2000/svg"><path d="M16 0C7.16 0 0 7.16 0 16c0 8.84 16 26 16 26S32 24.84 32 16C32 7.16 24.84 0 16 0z" fill="${color}"/><circle cx="16" cy="16" r="7" fill="white" opacity="0.9"/></svg>`,
+  iconSize:[32,42],iconAnchor:[16,42],popupAnchor:[0,-40],className:''
+});
+
+const sidebar=document.getElementById('map-sidebar');
+destinations.forEach((d,i)=>{
+  const marker=L.marker([d.lat,d.lng],{icon:svgIcon(d.color)}).addTo(map);
+  marker.bindPopup(`<strong style="font-size:1rem;font-family:'Cormorant Garamond',serif;">${d.name}</strong><br><span style="font-size:.8rem;opacity:.75;">${d.desc}</span>`);
+
+  const el=document.createElement('div');
+  el.className='map-location';
+  el.innerHTML=`<div class="map-loc-name"><span class="map-loc-dot"></span>${d.name}</div><div class="map-loc-desc">${d.desc}</div>`;
+  el.onclick=()=>{
+    document.querySelectorAll('.map-location').forEach(e=>e.classList.remove('active'));
+    el.classList.add('active');
+    map.flyTo([d.lat,d.lng],9,{duration:1.2});
+    marker.openPopup();
+  };
+  sidebar.appendChild(el);
+});
+
+/* ===== CONTACT FORM ===== */
+document.getElementById('contact-form').onsubmit=function(e){
+  e.preventDefault();
+  const btn=this.querySelector('.form-submit');
+  btn.textContent='Enviando...';
+  btn.disabled=true;
+  setTimeout(()=>{
+    this.style.display='none';
+    document.getElementById('form-success').style.display='block';
+  },1200);
+};
+</script>
+</body>
+</html>
